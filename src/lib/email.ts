@@ -8,7 +8,7 @@ function getResend() {
   }
   return new Resend(apiKey);
 }
-const fromAddress = process.env.EMAIL_FROM_ADDRESS || 'noreply@mymully.com';
+const fromAddress = process.env.EMAIL_FROM_ADDRESS || 'ap@mullybox.com';
 
 export async function sendPurchaseOrderEmail(
   to: string,
