@@ -1,0 +1,279 @@
+// MyMully Procurement Hub - Prisma Schema
+// Designed for PostgreSQL in production, SQLite for local development
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ---------- NextAuth Models ----------
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String?   @unique
+  emailVerified DateTime?
+  image         String?
+  password      String?
+  role          String    @default("VIEWER") // ADMIN, BUYER, VIEWER
+
+  accounts     Account[]
+  sessions     Session[]
+  activityLogs ActivityLog[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// ---------- Procurement Domain Models ----------
+
+model Vendor {
+  id                 String  @id @default(cuid())
+  companyName        String
+  brandName          String?
+  website            String?
+  orderMethod        String  @default("EMAIL") // EMAIL, PORTAL, API, PHONE, REPSPARK, FAIRE, OTHER
+  orderPortalUrl     String?
+  orderNotes         String?
+  minimumOrderAmount Float?
+  minimumOrderUnits  Int?
+  paymentTerms       String
+  paymentMethods     String  @default("[]") // JSON array stored as string
+  preferredPayment   String?
+  creditLimit        Float?
+  accountNumber      String?
+  resaleCertRequired Boolean @default(true)
+  resaleCertOnFile   Boolean @default(false)
+  resaleCertExpiry   DateTime?
+  resaleCertFileUrl  String?
+  taxExempt          Boolean @default(false)
+  w9OnFile           Boolean @default(false)
+  status             String  @default("PENDING_SETUP") // ACTIVE, PENDING_SETUP, INACTIVE, ON_HOLD
+  onboardingChecklist String? // JSON stored as string
+  notes              String?
+  tags               String  @default("[]") // JSON array stored as string
+
+  contacts       Contact[]
+  products       VendorProduct[]
+  purchaseOrders PurchaseOrder[]
+  invoices       Invoice[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status])
+  @@index([companyName])
+}
+
+model Contact {
+  id        String  @id @default(cuid())
+  vendorId  String
+  name      String
+  email     String
+  phone     String?
+  role      String?
+  isPrimary Boolean @default(false)
+
+  vendor Vendor @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([vendorId])
+}
+
+model VendorProduct {
+  id                String  @id @default(cuid())
+  vendorId          String
+  vendorSku         String
+  vendorProductName String
+  vendorColor       String?
+  vendorSize        String?
+  wholesaleCost     Float
+  msrp              Float?
+  shopifyProductId  String?
+  shopifyVariantId  String?
+  ourSku            String?
+  currentStock      Int?
+  salesVelocity     Float?
+  leadTimeDays      Int?
+  reorderPoint      Int?
+  reorderQuantity   Int?
+  isActive          Boolean @default(true)
+  lastOrdered       DateTime?
+
+  vendor    Vendor       @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  lineItems POLineItem[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([vendorId])
+  @@index([vendorSku])
+  @@index([ourSku])
+  @@index([shopifyProductId])
+}
+
+model PurchaseOrder {
+  id             String  @id @default(cuid())
+  poNumber       String  @unique
+  vendorId       String
+  status         String  @default("DRAFT") // DRAFT, PENDING_APPROVAL, APPROVED, SENT, ACKNOWLEDGED, PARTIALLY_RECEIVED, RECEIVED, CANCELLED
+  subtotal       Float
+  taxAmount      Float   @default(0)
+  shippingCost   Float   @default(0)
+  totalAmount    Float
+  orderDate      DateTime?
+  expectedDate   DateTime?
+  receivedDate   DateTime?
+  shipTo         String
+  shippingMethod String?
+  trackingNumber String?
+  poPdfUrl       String?
+  sentViaMethod  String? // EMAIL, PORTAL, MANUAL
+  sentToEmail    String?
+  sentAt         DateTime?
+  internalNotes  String?
+  vendorNotes    String?
+  createdBy      String
+
+  vendor    Vendor       @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  lineItems POLineItem[]
+  invoices  Invoice[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([vendorId])
+  @@index([status])
+  @@index([poNumber])
+}
+
+model POLineItem {
+  id               String @id @default(cuid())
+  purchaseOrderId  String
+  vendorProductId  String
+  vendorSku        String
+  description      String
+  quantity         Int
+  unitCost         Float
+  totalCost        Float
+  quantityReceived Int    @default(0)
+
+  purchaseOrder PurchaseOrder @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
+  vendorProduct VendorProduct @relation(fields: [vendorProductId], references: [id])
+
+  createdAt DateTime @default(now())
+
+  @@index([purchaseOrderId])
+  @@index([vendorProductId])
+}
+
+model Invoice {
+  id              String   @id @default(cuid())
+  vendorId        String
+  purchaseOrderId String?
+  invoiceNumber   String
+  status          String   @default("RECEIVED") // RECEIVED, MATCHED, DISPUTED, APPROVED, SCHEDULED, PAID, OVERDUE
+  subtotal        Float
+  taxAmount       Float    @default(0)
+  shippingCost    Float    @default(0)
+  totalAmount     Float
+  invoiceDate     DateTime
+  dueDate         DateTime
+  paidDate        DateTime?
+  paymentMethod   String?
+  paymentReference String?
+  originalFileUrl String?
+  parsedData      String?  // JSON stored as string
+  matchConfidence Float?
+  discrepancies   String?  // JSON stored as string
+
+  vendor        Vendor         @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  purchaseOrder PurchaseOrder? @relation(fields: [purchaseOrderId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([vendorId])
+  @@index([purchaseOrderId])
+  @@index([status])
+  @@index([invoiceNumber])
+}
+
+model ResaleCertificate {
+  id                String    @id @default(cuid())
+  state             String
+  certificateNumber String
+  issueDate         DateTime
+  expiryDate        DateTime?
+  fileUrl           String
+  isActive          Boolean   @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model ActivityLog {
+  id         String  @id @default(cuid())
+  action     String
+  entityType String
+  entityId   String
+  details    String? // JSON stored as string
+  userId     String?
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+
+  @@index([entityType, entityId])
+  @@index([userId])
+  @@index([createdAt])
+}
+
+model Settings {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  value     String   // JSON stored as string
+  updatedAt DateTime @updatedAt
+}
