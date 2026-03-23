@@ -6,6 +6,22 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import {
   Table,
   TableBody,
   TableCell,
@@ -48,6 +64,27 @@ export default function InvoicesPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
+  const [selectedVendorId, setSelectedVendorId] = useState("");
+  const [vendors, setVendors] = useState<{ id: string; companyName: string }[]>([]);
+  const [pendingFile, setPendingFile] = useState<File | null>(null);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+
+  useEffect(() => {
+    async function fetchVendors() {
+      try {
+        const res = await fetch("/api/vendors");
+        if (res.ok) {
+          const json = await res.json();
+          const list = json.data?.items ?? json.data ?? [];
+          setVendors(list.map((v: { id: string; companyName: string }) => ({ id: v.id, companyName: v.companyName })));
+        }
+      } catch {
+        // Vendors fetch failed - upload dialog will show empty list
+      }
+    }
+    fetchVendors();
+  }, []);
 
   useEffect(() => {
     async function fetchInvoices() {
@@ -66,34 +103,48 @@ export default function InvoicesPage() {
     fetchInvoices();
   }, []);
 
-  const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    setPendingFile(file);
+    setSelectedVendorId("");
+    setUploadError(null);
+    setUploadDialogOpen(true);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
+  const handleUploadConfirm = async () => {
+    if (!pendingFile || !selectedVendorId) return;
     setUploading(true);
+    setUploadError(null);
     try {
       const formData = new FormData();
-      formData.append("file", file);
+      formData.append("file", pendingFile);
+      formData.append("vendorId", selectedVendorId);
       const res = await fetch("/api/invoices/upload", {
         method: "POST",
         body: formData,
       });
-      if (!res.ok) throw new Error("Upload failed");
+      if (!res.ok) {
+        const json = await res.json().catch(() => ({}));
+        throw new Error(json.error || "Upload failed");
+      }
       const json = await res.json();
+      setUploadDialogOpen(false);
+      setPendingFile(null);
       if (json.data?.id) {
         router.push(`/invoices/${json.data.id}`);
       } else {
-        // Refresh the list
         const listRes = await fetch("/api/invoices");
         if (listRes.ok) {
           const listJson = await listRes.json();
           setInvoices(listJson.data?.items ?? listJson.data ?? []);
         }
       }
-    } catch {
-      // Upload failed
+    } catch (err) {
+      setUploadError(err instanceof Error ? err.message : "Upload failed");
     } finally {
       setUploading(false);
-      if (fileInputRef.current) fileInputRef.current.value = "";
     }
   };
 
@@ -134,19 +185,70 @@ export default function InvoicesPage() {
             type="file"
             accept=".pdf,.png,.jpg,.jpeg"
             className="hidden"
-            onChange={handleUpload}
+            onChange={handleFileSelect}
           />
           <Button
             onClick={() => fileInputRef.current?.click()}
             disabled={uploading}
           >
-            {uploading ? (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            ) : (
-              <Upload className="mr-2 h-4 w-4" />
-            )}
+            <Upload className="mr-2 h-4 w-4" />
             Upload Invoice
           </Button>
+          <Dialog open={uploadDialogOpen} onOpenChange={(open) => {
+            setUploadDialogOpen(open);
+            if (!open) setPendingFile(null);
+          }}>
+            <DialogContent className="sm:max-w-md">
+              <DialogHeader>
+                <DialogTitle>Upload Invoice</DialogTitle>
+                <DialogDescription>
+                  Select the vendor for {pendingFile?.name ?? "this invoice"}.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="grid gap-4 py-4">
+                <div className="grid gap-2">
+                  <Label>Vendor *</Label>
+                  <Select value={selectedVendorId} onValueChange={setSelectedVendorId}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select vendor" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {vendors.map((v) => (
+                        <SelectItem key={v.id} value={v.id}>
+                          {v.companyName}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              {uploadError && (
+                <p className="text-sm text-red-600">{uploadError}</p>
+              )}
+              <DialogFooter>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setUploadDialogOpen(false)}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={handleUploadConfirm}
+                  disabled={!selectedVendorId || uploading}
+                >
+                  {uploading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Uploading...
+                    </>
+                  ) : (
+                    "Upload"
+                  )}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
         </div>
       </div>
 
