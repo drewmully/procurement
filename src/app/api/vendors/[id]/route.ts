@@ -49,7 +49,7 @@ export async function GET(
       return NextResponse.json({ error: "Vendor not found" }, { status: 404 });
     }
 
-    return NextResponse.json(vendor);
+    return NextResponse.json({ data: vendor });
   } catch (error) {
     console.error("Failed to get vendor:", error);
     return NextResponse.json(
@@ -76,7 +76,7 @@ export async function PUT(
       data: body,
     });
 
-    return NextResponse.json(vendor);
+    return NextResponse.json({ data: vendor });
   } catch (error) {
     console.error("Failed to update vendor:", error);
     return NextResponse.json(
@@ -98,7 +98,7 @@ export async function DELETE(
       data: { status: "INACTIVE" },
     });
 
-    return NextResponse.json(vendor);
+    return NextResponse.json({ data: vendor });
   } catch (error) {
     console.error("Failed to delete vendor:", error);
     return NextResponse.json(

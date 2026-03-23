@@ -53,14 +53,7 @@ export async function GET(request: NextRequest) {
       ? inventory.filter((item) => item.inventoryStatus === status)
       : inventory;
 
-    return NextResponse.json({
-      inventory: filtered,
-      pagination: {
-        page,
-        pageSize,
-        total: filtered.length,
-      },
-    });
+    return NextResponse.json({ data: filtered });
   } catch (error) {
     console.error("Failed to get inventory:", error);
     return NextResponse.json(

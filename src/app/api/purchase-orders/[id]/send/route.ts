@@ -53,7 +53,7 @@ export async function POST(
       }
     }
 
-    return NextResponse.json(updatedPO);
+    return NextResponse.json({ data: updatedPO });
   } catch (error) {
     console.error("Failed to send purchase order:", error);
     return NextResponse.json(

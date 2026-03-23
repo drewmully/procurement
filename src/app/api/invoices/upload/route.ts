@@ -53,7 +53,7 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    return NextResponse.json(invoice, { status: 201 });
+    return NextResponse.json({ data: invoice }, { status: 201 });
   } catch (error) {
     console.error("Failed to upload invoice:", error);
     return NextResponse.json(

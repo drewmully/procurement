@@ -15,7 +15,7 @@ export async function GET(
       orderBy: [{ isPrimary: "desc" }, { name: "asc" }],
     });
 
-    return NextResponse.json(contacts);
+    return NextResponse.json({ data: contacts });
   } catch (error) {
     console.error("Failed to list contacts:", error);
     return NextResponse.json(
@@ -49,7 +49,7 @@ export async function POST(
       },
     });
 
-    return NextResponse.json(contact, { status: 201 });
+    return NextResponse.json({ data: contact }, { status: 201 });
   } catch (error) {
     console.error("Failed to create contact:", error);
     return NextResponse.json(

@@ -12,7 +12,7 @@ export async function GET() {
       settingsObj[setting.key] = setting.value;
     }
 
-    return NextResponse.json(settingsObj);
+    return NextResponse.json({ data: settingsObj });
   } catch (error) {
     console.error("Failed to get settings:", error);
     return NextResponse.json(
@@ -43,7 +43,7 @@ export async function PUT(request: NextRequest) {
       settingsObj[setting.key] = setting.value;
     }
 
-    return NextResponse.json(settingsObj);
+    return NextResponse.json({ data: settingsObj });
   } catch (error) {
     console.error("Failed to update settings:", error);
     return NextResponse.json(

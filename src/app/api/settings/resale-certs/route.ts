@@ -9,7 +9,7 @@ export async function GET() {
       orderBy: { state: "asc" },
     });
 
-    return NextResponse.json(certificates);
+    return NextResponse.json({ data: certificates });
   } catch (error) {
     console.error("Failed to list resale certificates:", error);
     return NextResponse.json(
@@ -34,7 +34,7 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    return NextResponse.json(certificate, { status: 201 });
+    return NextResponse.json({ data: certificate }, { status: 201 });
   } catch (error) {
     console.error("Failed to create resale certificate:", error);
     return NextResponse.json(

@@ -36,7 +36,7 @@ export async function GET(request: NextRequest) {
         };
       });
 
-    return NextResponse.json({ alerts });
+    return NextResponse.json({ data: { alerts } });
   } catch (error) {
     console.error("Failed to get reorder alerts:", error);
     return NextResponse.json(

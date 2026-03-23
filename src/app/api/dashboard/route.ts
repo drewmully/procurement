@@ -140,7 +140,7 @@ export async function GET() {
       }),
     ]);
 
-    return NextResponse.json({
+    return NextResponse.json({ data: {
       actionItems: {
         draftPOs,
         unmatchedInvoices,
@@ -162,7 +162,7 @@ export async function GET() {
         activeVendorCount,
       },
       recentActivity,
-    });
+    } });
   } catch (error) {
     console.error("Failed to get dashboard data:", error);
     return NextResponse.json(

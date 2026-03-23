@@ -57,15 +57,7 @@ export async function GET(request: NextRequest) {
       prisma.purchaseOrder.count({ where }),
     ]);
 
-    return NextResponse.json({
-      purchaseOrders,
-      pagination: {
-        page,
-        pageSize,
-        total,
-        totalPages: Math.ceil(total / pageSize),
-      },
-    });
+    return NextResponse.json({ data: purchaseOrders });
   } catch (error) {
     console.error("Failed to list purchase orders:", error);
     return NextResponse.json(
@@ -150,7 +142,7 @@ export async function POST(request: NextRequest) {
       return po;
     });
 
-    return NextResponse.json(purchaseOrder, { status: 201 });
+    return NextResponse.json({ data: purchaseOrder }, { status: 201 });
   } catch (error) {
     console.error("Failed to create purchase order:", error);
     return NextResponse.json(

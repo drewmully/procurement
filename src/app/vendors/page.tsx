@@ -82,6 +82,9 @@ export default function VendorsPage() {
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [sorting, setSorting] = useState<SortingState>([]);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [paymentTerms, setPaymentTerms] = useState<string>("");
+  const [formError, setFormError] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
 
   const { data, isLoading, error } = useQuery<Vendor[]>({
     queryKey: ["vendors", search, statusFilter],
@@ -193,23 +196,35 @@ export default function VendorsPage() {
             <form
               onSubmit={async (e) => {
                 e.preventDefault();
-                const formData = new FormData(e.currentTarget);
-                const body = {
-                  companyName: formData.get("companyName"),
-                  brandName: formData.get("brandName") || null,
-                  website: formData.get("website") || null,
-                  paymentTerms: formData.get("paymentTerms") || null,
-                  notes: formData.get("notes") || null,
-                };
-                const res = await fetch("/api/vendors", {
-                  method: "POST",
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify(body),
-                });
-                if (res.ok) {
-                  const json = await res.json();
-                  setDialogOpen(false);
-                  router.push(`/vendors/${json.data?.id ?? ""}`);
+                setFormError(null);
+                setSubmitting(true);
+                try {
+                  const formData = new FormData(e.currentTarget);
+                  const body = {
+                    companyName: formData.get("companyName"),
+                    brandName: formData.get("brandName") || null,
+                    website: formData.get("website") || null,
+                    paymentTerms: paymentTerms || null,
+                    notes: formData.get("notes") || null,
+                  };
+                  const res = await fetch("/api/vendors", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(body),
+                  });
+                  if (res.ok) {
+                    const json = await res.json();
+                    setDialogOpen(false);
+                    setPaymentTerms("");
+                    router.push(`/vendors/${json.data?.id ?? ""}`);
+                  } else {
+                    const json = await res.json().catch(() => ({}));
+                    setFormError(json.error || `Error: ${res.status}`);
+                  }
+                } catch {
+                  setFormError("Network error. Please try again.");
+                } finally {
+                  setSubmitting(false);
                 }
               }}
             >
@@ -242,7 +257,7 @@ export default function VendorsPage() {
                 </div>
                 <div className="grid gap-2">
                   <Label htmlFor="paymentTerms">Payment Terms</Label>
-                  <Select name="paymentTerms">
+                  <Select value={paymentTerms} onValueChange={setPaymentTerms}>
                     <SelectTrigger>
                       <SelectValue placeholder="Select terms" />
                     </SelectTrigger>
@@ -266,6 +281,9 @@ export default function VendorsPage() {
                   />
                 </div>
               </div>
+              {formError && (
+                <p className="text-sm text-red-600">{formError}</p>
+              )}
               <DialogFooter>
                 <Button
                   type="button"
@@ -274,7 +292,16 @@ export default function VendorsPage() {
                 >
                   Cancel
                 </Button>
-                <Button type="submit">Create Vendor</Button>
+                <Button type="submit" disabled={submitting}>
+                  {submitting ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Creating...
+                    </>
+                  ) : (
+                    "Create Vendor"
+                  )}
+                </Button>
               </DialogFooter>
             </form>
           </DialogContent>

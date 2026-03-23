@@ -70,7 +70,7 @@ export async function POST(
       return po;
     });
 
-    return NextResponse.json(result);
+    return NextResponse.json({ data: result });
   } catch (error) {
     console.error("Failed to record receipt:", error);
     return NextResponse.json(

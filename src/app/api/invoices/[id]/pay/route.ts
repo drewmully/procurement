@@ -34,7 +34,7 @@ export async function POST(
       },
     });
 
-    return NextResponse.json(updatedInvoice);
+    return NextResponse.json({ data: updatedInvoice });
   } catch (error) {
     console.error("Failed to record payment:", error);
     return NextResponse.json(

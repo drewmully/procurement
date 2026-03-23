@@ -44,15 +44,7 @@ export async function GET(request: NextRequest) {
       prisma.vendor.count({ where }),
     ]);
 
-    return NextResponse.json({
-      vendors,
-      pagination: {
-        page,
-        pageSize,
-        total,
-        totalPages: Math.ceil(total / pageSize),
-      },
-    });
+    return NextResponse.json({ data: vendors });
   } catch (error) {
     console.error("Failed to list vendors:", error);
     return NextResponse.json(
@@ -110,7 +102,7 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    return NextResponse.json(vendor, { status: 201 });
+    return NextResponse.json({ data: vendor }, { status: 201 });
   } catch (error) {
     console.error("Failed to create vendor:", error);
     return NextResponse.json(

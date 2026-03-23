@@ -29,7 +29,7 @@ export async function GET(
       );
     }
 
-    return NextResponse.json(invoice);
+    return NextResponse.json({ data: invoice });
   } catch (error) {
     console.error("Failed to get invoice:", error);
     return NextResponse.json(
@@ -63,7 +63,7 @@ export async function PUT(
       },
     });
 
-    return NextResponse.json(invoice);
+    return NextResponse.json({ data: invoice });
   } catch (error) {
     console.error("Failed to update invoice:", error);
     return NextResponse.json(

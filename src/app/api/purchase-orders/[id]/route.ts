@@ -28,7 +28,7 @@ export async function GET(
       );
     }
 
-    return NextResponse.json(purchaseOrder);
+    return NextResponse.json({ data: purchaseOrder });
   } catch (error) {
     console.error("Failed to get purchase order:", error);
     return NextResponse.json(
@@ -126,7 +126,7 @@ export async function PUT(
       return po;
     });
 
-    return NextResponse.json(result);
+    return NextResponse.json({ data: result });
   } catch (error) {
     console.error("Failed to update purchase order:", error);
     return NextResponse.json(
