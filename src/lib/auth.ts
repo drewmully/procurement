@@ -1,16 +1,22 @@
 import { type NextAuthOptions } from 'next-auth';
 import CredentialsProvider from 'next-auth/providers/credentials';
-import { PrismaAdapter } from '@auth/prisma-adapter';
-import bcrypt from 'bcryptjs';
-import { prisma } from './db';
+
+// Hardcoded single-user auth — no database needed
+const ADMIN_USER = {
+  id: 'mully-admin',
+  name: 'Mully',
+  email: 'mully@mymully.com',
+  role: 'ADMIN',
+};
+const ADMIN_USERNAME = 'mully';
+const ADMIN_PASSWORD = process.env.AUTH_PASSWORD || 'procurement';
 
 export const authOptions: NextAuthOptions = {
-  adapter: PrismaAdapter(prisma) as NextAuthOptions['adapter'],
   providers: [
     CredentialsProvider({
       name: 'credentials',
       credentials: {
-        email: { label: 'Username or Email', type: 'text' },
+        email: { label: 'Username', type: 'text' },
         password: { label: 'Password', type: 'password' },
       },
       async authorize(credentials) {
@@ -18,35 +24,16 @@ export const authOptions: NextAuthOptions = {
           return null;
         }
 
-        // Allow login by username (e.g. "mully") or full email
-        const loginValue = credentials.email;
-        const emailToFind = loginValue.includes('@')
-          ? loginValue
-          : `${loginValue}@mymully.com`;
+        const login = credentials.email.toLowerCase().trim();
+        const isMatch =
+          (login === ADMIN_USERNAME || login === ADMIN_USER.email) &&
+          credentials.password === ADMIN_PASSWORD;
 
-        const user = await prisma.user.findUnique({
-          where: { email: emailToFind },
-        });
-
-        if (!user || !user.password) {
+        if (!isMatch) {
           return null;
         }
 
-        const isPasswordValid = await bcrypt.compare(
-          credentials.password,
-          user.password
-        );
-
-        if (!isPasswordValid) {
-          return null;
-        }
-
-        return {
-          id: user.id,
-          email: user.email,
-          name: user.name,
-          role: user.role,
-        };
+        return ADMIN_USER;
       },
     }),
   ],
