@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
+import { useSession } from "next-auth/react";
 import { Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import {
@@ -32,6 +33,7 @@ const searchableItems = [
 export function HeaderBar() {
   const [open, setOpen] = useState(false);
   const router = useRouter();
+  const { data: session } = useSession();
 
   useEffect(() => {
     const down = (e: KeyboardEvent) => {
@@ -67,7 +69,7 @@ export function HeaderBar() {
 
       <div className="flex items-center gap-3">
         <div className="h-8 w-8 rounded-full bg-blue-600 flex items-center justify-center text-white text-sm font-medium">
-          U
+          {session?.user?.name?.[0]?.toUpperCase() || "U"}
         </div>
       </div>
 

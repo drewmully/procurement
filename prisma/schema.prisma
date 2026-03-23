@@ -271,6 +271,28 @@ model ActivityLog {
   @@index([createdAt])
 }
 
+model InboundEmail {
+  id          String   @id @default(cuid())
+  from        String
+  to          String
+  subject     String
+  bodyText    String?
+  bodyHtml    String?
+  receivedAt  DateTime @default(now())
+  status      String   @default("NEW") // NEW, PROCESSED, INVOICE_CREATED, IGNORED
+  invoiceId   String?
+  vendorId    String?
+  attachments String?  // JSON array of { filename, url }
+  rawPayload  String?  // full webhook payload for debugging
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status])
+  @@index([from])
+  @@index([receivedAt])
+}
+
 model Settings {
   id        String   @id @default(cuid())
   key       String   @unique

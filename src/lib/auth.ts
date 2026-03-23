@@ -10,7 +10,7 @@ export const authOptions: NextAuthOptions = {
     CredentialsProvider({
       name: 'credentials',
       credentials: {
-        email: { label: 'Email', type: 'email' },
+        email: { label: 'Username or Email', type: 'text' },
         password: { label: 'Password', type: 'password' },
       },
       async authorize(credentials) {
@@ -18,8 +18,14 @@ export const authOptions: NextAuthOptions = {
           return null;
         }
 
+        // Allow login by username (e.g. "mully") or full email
+        const loginValue = credentials.email;
+        const emailToFind = loginValue.includes('@')
+          ? loginValue
+          : `${loginValue}@mymully.com`;
+
         const user = await prisma.user.findUnique({
-          where: { email: credentials.email },
+          where: { email: emailToFind },
         });
 
         if (!user || !user.password) {

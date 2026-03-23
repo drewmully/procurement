@@ -4,14 +4,14 @@ import { hash } from "bcryptjs";
 const prisma = new PrismaClient();
 
 async function main() {
-  // Create admin user
-  const hashedPassword = await hash("admin123", 12);
+  // Create admin user (username: mully)
+  const hashedPassword = await hash("procurement", 12);
   const admin = await prisma.user.upsert({
-    where: { email: "admin@mymully.com" },
+    where: { email: "mully@mymully.com" },
     update: {},
     create: {
-      name: "Admin User",
-      email: "admin@mymully.com",
+      name: "Mully",
+      email: "mully@mymully.com",
       password: hashedPassword,
       role: "ADMIN",
     },
@@ -203,7 +203,7 @@ async function main() {
   });
 
   console.log("Seed data created successfully!");
-  console.log(`  - Admin user: admin@mymully.com / admin123`);
+  console.log(`  - Admin user: mully@mymully.com / procurement`);
   console.log(`  - ${3} vendors created`);
   console.log(`  - ${1} purchase order created`);
   console.log(`  - ${1} invoice created`);

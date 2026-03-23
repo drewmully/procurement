@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { signOut, useSession } from "next-auth/react";
 import {
   LayoutDashboard,
   Building2,
@@ -9,6 +10,7 @@ import {
   Receipt,
   Package,
   Settings,
+  LogOut,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -23,6 +25,7 @@ const navItems = [
 
 export function Sidebar() {
   const pathname = usePathname();
+  const { data: session } = useSession();
 
   return (
     <aside className="flex w-64 flex-col bg-gray-900 text-white">
@@ -60,7 +63,24 @@ export function Sidebar() {
       </nav>
 
       <div className="border-t border-gray-800 p-4">
-        <p className="text-xs text-gray-500">MyMully Procurement Hub v1.0</p>
+        {session?.user && (
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="flex h-7 w-7 items-center justify-center rounded-full bg-blue-600 text-xs font-medium">
+                {session.user.name?.[0]?.toUpperCase() || "U"}
+              </div>
+              <span className="text-sm text-gray-300">{session.user.name || session.user.email}</span>
+            </div>
+            <button
+              onClick={() => signOut({ callbackUrl: "/login" })}
+              className="text-gray-500 hover:text-white transition-colors"
+              title="Sign out"
+            >
+              <LogOut className="h-4 w-4" />
+            </button>
+          </div>
+        )}
+        <p className="mt-2 text-xs text-gray-500">MyMully Procurement Hub v1.0</p>
       </div>
     </aside>
   );
