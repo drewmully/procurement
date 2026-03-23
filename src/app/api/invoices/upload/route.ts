@@ -1,9 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/db";
-import { writeFile, mkdir } from "fs/promises";
+import { put } from "@vercel/blob";
 
 export const dynamic = "force-dynamic";
-import { join } from "path";
 
 export async function POST(request: NextRequest) {
   try {
@@ -26,22 +25,16 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Save file to uploads directory
-    const uploadsDir = join(process.cwd(), "uploads", "invoices");
-    await mkdir(uploadsDir, { recursive: true });
-
+    // Upload file to Vercel Blob storage
     const timestamp = Date.now();
     const sanitizedName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
-    const fileName = `${timestamp}-${sanitizedName}`;
-    const filePath = join(uploadsDir, fileName);
+    const blobPath = `invoices/${timestamp}-${sanitizedName}`;
 
-    const bytes = await file.arrayBuffer();
-    const buffer = Buffer.from(bytes);
-    await writeFile(filePath, buffer);
+    const blob = await put(blobPath, file, {
+      access: "public",
+    });
 
-    const fileUrl = `/uploads/invoices/${fileName}`;
-
-    // Create invoice record with basic info
+    // Create invoice record with blob URL
     const invoice = await prisma.invoice.create({
       data: {
         vendorId,
@@ -53,7 +46,7 @@ export async function POST(request: NextRequest) {
         totalAmount: 0,
         invoiceDate: new Date(),
         dueDate: new Date(),
-        originalFileUrl: fileUrl,
+        originalFileUrl: blob.url,
       },
       include: {
         vendor: { select: { id: true, companyName: true } },
